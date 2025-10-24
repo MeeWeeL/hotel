@@ -1,0 +1,33 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      routes:
+        - id: booking
+          uri: lb://booking-service
+          predicates:
+            - Path=/auth/**,/booking/**,/bookings/**,/user/**
+        - id: hotel
+          uri: lb://hotel-service
+          predicates:
+            - Path=/api/hotels/**,/api/rooms/**
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+app:
+  jwt:
+    secret: change-me-change-me-change-me-change-me
+
+management:
+  endpoints:
+    web.exposure.include: health,info
