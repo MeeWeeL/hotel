@@ -10,10 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.web.SecurityFilterChain;
 
 import javax.crypto.spec.SecretKeySpec;
@@ -27,35 +24,34 @@ public class SecurityConfig {
     private String secret;
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html", "/swagger-ui/**",
+                                "/scalar/**",
+                                "/actuator/**",
+                                "/auth/**", "/user/**"
+                        ).permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .anyRequest().authenticated())
+                .oauth2ResourceServer(o -> o.jwt(Customizer.withDefaults()));
+        return http.build();
     }
 
     @Bean
-    public JwtDecoder jwtDecoder() {
-        var key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        return NimbusJwtDecoder.withSecretKey(key).build();
+    JwtDecoder jwtDecoder() {
+        byte[] key = secret.getBytes(StandardCharsets.UTF_8);
+        return NimbusJwtDecoder.withSecretKey(new SecretKeySpec(key, "HmacSHA256")).build();
     }
 
     @Bean
-    public JwtEncoder jwtEncoder() {
-        var key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+    JwtEncoder jwtEncoder() {
+        byte[] key = secret.getBytes(StandardCharsets.UTF_8);
         return new NimbusJwtEncoder(new ImmutableSecret<>(key));
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable);
-        http.authorizeHttpRequests(reg -> reg
-                .requestMatchers(
-                        "/actuator/**",
-                        "/v3/api-docs", "/v3/api-docs/**",
-                        "/swagger-ui.html", "/swagger-ui/**",
-                        "/auth/**"
-                ).permitAll()
-                .anyRequest().authenticated()
-        );
-        http.oauth2ResourceServer(conf -> conf.jwt(Customizer.withDefaults()));
-        return http.build();
-    }
+    PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
 }

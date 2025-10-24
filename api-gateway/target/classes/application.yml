@@ -26,7 +26,7 @@ eureka:
 
 app:
   jwt:
-    secret: change-me-change-me-change-me-change-me
+    secret: ${APP_JWT_SECRET:dev-UNSAFE-default-change-me}
 
 management:
   endpoints:

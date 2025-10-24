@@ -3,6 +3,7 @@ package com.acme.hotel.security;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -17,7 +18,7 @@ import java.nio.charset.StandardCharsets;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Value("${app.jwt.secret:change-me-change-me-change-me-change-me}")
+    @Value("${APP_JWT_SECRET:dev-UNSAFE-default-change-me}")
     private String secret;
 
     @Bean
@@ -28,17 +29,18 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable);
-        http.authorizeHttpRequests(reg -> reg
-                .requestMatchers(
-                        "/actuator/**",
-                        "/v3/api-docs", "/v3/api-docs/**",
-                        "/swagger-ui.html", "/swagger-ui/**"
-                ).permitAll()
-                .anyRequest().authenticated()
-        );
-        http.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {
-        }));
+        http.csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html", "/swagger-ui/**",
+                                "/scalar/**",             // новый UI
+                                "/actuator/**",
+                                "/auth/**", "/user/**"    // твои публичные ручки регистрации/логина
+                        ).permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .anyRequest().authenticated())
+                .oauth2ResourceServer(o -> o.jwt(Customizer.withDefaults()));
         return http.build();
     }
 }

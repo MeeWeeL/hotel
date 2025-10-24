@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 @EnableWebFluxSecurity
 public class GatewaySecurityConfig {
 
-    @Value("${app.jwt.secret:change-me-change-me-change-me-change-me}")
+    @Value("${APP_JWT_SECRET:dev-UNSAFE-default-change-me}")
     private String secret;
 
     @Bean
